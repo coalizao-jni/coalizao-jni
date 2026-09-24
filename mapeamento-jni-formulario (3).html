@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mapeamento Nacional — Coalizão JNI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Syne:wght@400;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --terra:    #6B2D0E;
+    --ocre:     #C4782A;
+    --areia:    #E8D5B0;
+    --floresta: #1A3A2A;
+    --folha:    #2E6B45;
+    --ceu:      #1C2B3A;
+    --branco:   #FAF6EF;
+    --preto:    #0D0D0D;
+    --erro:     #9B2C2C;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--branco);
+    color: var(--preto);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 6rem;
+  }
+
+  .form-header { text-align: left; margin-bottom: 2.5rem; }
+  .form-tag {
+    font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ocre); display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;
+  }
+  .form-tag::before { content:''; display:block; width:1.5rem; height:1px; background:var(--ocre); }
+  .form-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.9rem, 5vw, 2.8rem);
+    font-weight: 900; line-height: 1.1; color: var(--floresta); margin-bottom: 1rem;
+  }
+  .form-title em { font-style: italic; color: var(--ocre); }
+  .form-intro { font-size: 0.98rem; line-height: 1.75; color: #3a3a3a; max-width: 620px; }
+  .form-intro strong { color: var(--terra); }
+
+  .progress-wrap { margin: 2.2rem 0 2.6rem; }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--floresta); margin-bottom: 0.5rem;
+  }
+  .progress-track { height: 4px; background: rgba(107,45,14,0.15); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--ocre); border-radius: 2px; transition: width 0.35s ease; width: 12.5%; }
+
+  .step { display: none; }
+  .step.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
+
+  .step-eyebrow { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ocre); margin-bottom: 0.5rem; }
+  .step-title { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--floresta); margin-bottom: 0.5rem; }
+  .step-sub { font-size: 0.88rem; color: #555; line-height: 1.6; margin-bottom: 2rem; max-width: 560px; }
+
+  .field { margin-bottom: 1.7rem; }
+  .field-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--floresta); margin-bottom: 0.5rem; letter-spacing: 0.01em; }
+  .field-hint { font-size: 0.76rem; color: #777; margin-top: 0.35rem; }
+  .field-required::after { content: ' *'; color: var(--terra); }
+
+  input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea, select {
+    width: 100%; font-family: 'Syne', sans-serif; font-size: 0.92rem;
+    padding: 0.8rem 1rem; border: 1px solid rgba(107,45,14,0.3);
+    background: #fff; color: var(--preto); border-radius: 3px; transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--ocre); }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+
+  .radio-grid, .check-grid { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .radio-grid.col, .check-grid.col { flex-direction: column; }
+
+  .chip { position: relative; }
+  .chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .chip label {
+    display: inline-block; font-size: 0.82rem; padding: 0.55rem 1.1rem;
+    border: 1px solid rgba(107,45,14,0.35); color: var(--terra); border-radius: 20px;
+    cursor: pointer; transition: all 0.2s; user-select: none;
+  }
+  .chip input:checked + label { background: var(--terra); border-color: var(--terra); color: var(--branco); }
+  .chip input:focus-visible + label { outline: 2px solid var(--ocre); outline-offset: 2px; }
+
+  .yesno { display: flex; gap: 0.6rem; }
+
+  .other-field { margin-top: 0.8rem; display: none; }
+  .other-field.show { display: block; }
+
+  .sub-block {
+    margin-top: 1rem; padding: 1.1rem 1.2rem;
+    background: rgba(196,120,42,0.06); border-left: 2px solid var(--ocre);
+    border-radius: 2px; display: none;
+  }
+  .sub-block.show { display: block; }
+  .sub-block .field:last-child { margin-bottom: 0; }
+
+  .error-msg { display: none; font-size: 0.78rem; color: var(--erro); margin-top: 0.4rem; }
+  .field.invalid .error-msg { display: block; }
+  .field.invalid input[type="text"], .field.invalid input[type="email"], .field.invalid input[type="number"], .field.invalid textarea, .field.invalid select {
+    border-color: var(--erro);
+  }
+
+  .consent-box {
+    display: flex; align-items: flex-start; gap: 0.8rem;
+    padding: 1.1rem 1.2rem; background: var(--areia); border-radius: 4px; margin-bottom: 1rem;
+  }
+  .consent-box input { margin-top: 0.25rem; flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--terra); }
+  .consent-box p { font-size: 0.85rem; line-height: 1.6; color: #333; }
+  .consent-box p strong { color: var(--terra); }
+
+  .lgpd-note {
+    background: #fff; border: 1px solid rgba(26,58,42,0.18);
+    border-radius: 4px; padding: 1.2rem 1.4rem; margin-bottom: 1.4rem;
+  }
+  .lgpd-note h4 { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--floresta); margin-bottom: 0.6rem; }
+  .lgpd-note p { font-size: 0.85rem; line-height: 1.7; color: #333; margin-bottom: 0.6rem; }
+  .lgpd-note p:last-child { margin-bottom: 0; }
+
+  .step-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 2.8rem; padding-top: 1.8rem; border-top: 1px solid rgba(107,45,14,0.15);
+  }
+  .btn {
+    font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; padding: 0.85rem 1.8rem;
+    border: none; cursor: pointer; border-radius: 3px;
+    transition: background 0.25s, transform 0.15s, opacity 0.2s;
+  }
+  .btn-primary { background: var(--ocre); color: var(--branco); }
+  .btn-primary:hover { background: var(--terra); transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--floresta); border: 1px solid rgba(26,58,42,0.3); }
+  .btn-ghost:hover { border-color: var(--floresta); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .summary-block { background: #fff; border: 1px solid rgba(107,45,14,0.15); border-radius: 4px; padding: 1.4rem 1.6rem; margin-bottom: 1.2rem; }
+  .summary-block h4 { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--terra); margin-bottom: 0.6rem; }
+  .summary-block dl { font-size: 0.82rem; color: #444; line-height: 1.9; }
+  .summary-block dt { font-weight: 600; color: var(--floresta); }
+  .summary-block dd { margin-bottom: 0.5rem; }
+
+  .done-screen { text-align: center; padding: 3rem 1rem; }
+  .done-icon { font-size: 3rem; margin-bottom: 1.2rem; }
+  .done-screen h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--floresta); margin-bottom: 1rem; }
+  .done-screen p { font-size: 0.95rem; color: #444; line-height: 1.7; max-width: 480px; margin: 0 auto 1.6rem; }
+
+  .status-msg { font-size: 0.82rem; margin-top: 1rem; padding: 0.8rem 1rem; border-radius: 3px; display: none; }
+  .status-msg.show { display: block; }
+  .status-msg.info { background: var(--areia); color: var(--terra); }
+  .status-msg.error { background: #f7e3e3; color: var(--erro); }
+
+  @media (max-width: 600px) {
+    .page { padding: 2.2rem 1.1rem 4rem; }
+    .step-nav { flex-direction: column-reverse; gap: 0.8rem; }
+    .step-nav .btn { width: 100%; }
+    .step-nav > div { display:flex; width:100%; gap:0.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="form-header">
+    <div class="form-tag">Coalizão JNI · Mapeamento nacional</div>
+    <h1 class="form-title">Sua trajetória <em>importa</em><br>para este mapeamento</h1>
+    <p class="form-intro">
+      Este formulário alimenta a construção de um <strong>manual de proteção para jornalistas
+      e comunicadoras negras e indígenas</strong> no Brasil. Não é preciso ter diploma ou vínculo
+      formal com veículo de imprensa: se você comunica a partir do seu território — em rádio
+      comunitária, redes sociais, boletins, fotografia, vídeo ou qualquer outro formato — este
+      espaço é seu. Leva cerca de 15 a 20 minutos.
+    </p>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-label"><span id="stepLabel">Etapa 1 de 7</span><span id="stepName">Identificação</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <form id="mapForm" novalidate>
+
+    <!-- STEP 1 — IDENTIFICAÇÃO -->
+    <div class="step active" data-step="1">
+      <div class="step-eyebrow">01 — Quem é você</div>
+      <div class="step-title">Identificação</div>
+      <p class="step-sub">Dados básicos para podermos te localizar e, mais adiante, te avisar sobre formações e oportunidades.</p>
+
+      <div class="field">
+        <label class="field-label field-required">Nome completo</label>
+        <input type="text" id="nome" required>
+        <div class="error-msg">Preencha seu nome completo.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Como prefere ser chamada (nome social, apelido)</label>
+        <input type="text" id="nomeSocial">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Pronomes</label>
+        <input type="text" id="pronomes" placeholder="ex.: ela/dela">
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Faixa etária</label>
+        <select id="faixaEtaria" required>
+          <option value="">Selecione</option>
+          <option>18 a 24 anos</option>
+          <option>25 a 34 anos</option>
+          <option>35 a 44 anos</option>
+          <option>45 a 59 anos</option>
+          <option>60 anos ou mais</option>
+        </select>
+        <div class="error-msg">Selecione sua faixa etária.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">E-mail</label>
+        <input type="email" id="email" required>
+        <div class="error-msg">Informe um e-mail válido.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">WhatsApp / telefone</label>
+        <input type="tel" id="whatsapp" placeholder="(DDD) 9XXXX-XXXX">
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Estado</label>
+        <select id="estado" required>
+          <option value="">Selecione</option>
+          <option value="AC">AC – Acre</option>
+          <option value="AL">AL – Alagoas</option>
+          <option value="AP">AP – Amapá</option>
+          <option value="AM">AM – Amazonas</option>
+          <option value="BA">BA – Bahia</option>
+          <option value="CE">CE – Ceará</option>
+          <option value="DF">DF – Distrito Federal</option>
+          <option value="ES">ES – Espírito Santo</option>
+          <option value="GO">GO – Goiás</option>
+          <option value="MA">MA – Maranhão</option>
+          <option value="MT">MT – Mato Grosso</option>
+          <option value="MS">MS – Mato Grosso do Sul</option>
+          <option value="MG">MG – Minas Gerais</option>
+          <option value="PA">PA – Pará</option>
+          <option value="PB">PB – Paraíba</option>
+          <option value="PR">PR – Paraná</option>
+          <option value="PE">PE – Pernambuco</option>
+          <option value="PI">PI – Piauí</option>
+          <option value="RJ">RJ – Rio de Janeiro</option>
+          <option value="RN">RN – Rio Grande do Norte</option>
+          <option value="RS">RS – Rio Grande do Sul</option>
+          <option value="RO">RO – Rondônia</option>
+          <option value="RR">RR – Roraima</option>
+          <option value="SC">SC – Santa Catarina</option>
+          <option value="SP">SP – São Paulo</option>
+          <option value="SE">SE – Sergipe</option>
+          <option value="TO">TO – Tocantins</option>
+        </select>
+        <div class="error-msg">Selecione o estado.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Cidade</label>
+        <input type="text" id="cidade" required>
+        <div class="error-msg">Informe a cidade.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Território, comunidade, aldeia, quilombo ou bairro de referência</label>
+        <input type="text" id="territorio">
+        <div class="field-hint">Se fizer sentido para sua realidade — não é obrigatório.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Bioma(s) predominante(s) da sua região de atuação</label>
+        <div class="check-grid" id="biomas">
+          <span class="chip"><input type="checkbox" name="biomas" value="Amazônia" id="b1"><label for="b1">Amazônia</label></span>
+          <span class="chip"><input type="checkbox" name="biomas" value="Cerrado" id="b2"><label for="b2">Cerrado</label></span>
+          <span class="chip"><input type="checkbox" name="biomas" value="Caatinga" id="b3"><label for="b3">Caatinga</label></span>
+          <span class="chip"><input type="checkbox" name="biomas" value="Mata Atlântica" id="b4"><label for="b4">Mata Atlântica</label></span>
+          <span class="chip"><input type="checkbox" name="biomas" value="Pampa" id="b5"><label for="b5">Pampa</label></span>
+          <span class="chip"><input type="checkbox" name="biomas" value="Pantanal" id="b6"><label for="b6">Pantanal</label></span>
+          <span class="chip"><input type="checkbox" name="biomas" value="Litoral / costeiro" id="b7"><label for="b7">Litoral / costeiro</label></span>
+        </div>
+        <div class="error-msg">Selecione ao menos um.</div>
+      </div>
+    </div>
+
+    <!-- STEP 2 — IDENTIDADE -->
+    <div class="step" data-step="2">
+      <div class="step-eyebrow">02 — Identidade</div>
+      <div class="step-title">Identidade e contexto familiar</div>
+      <p class="step-sub">Essas informações moldam o recorte do mapeamento e do manual — nada aqui é usado fora desse propósito (veja a etapa de consentimento).</p>
+
+      <div class="field">
+        <label class="field-label field-required">Autodeclaração de raça/cor</label>
+        <div class="radio-grid" id="racaCor">
+          <span class="chip"><input type="radio" name="racaCor" value="Preta" id="r1"><label for="r1">Preta</label></span>
+          <span class="chip"><input type="radio" name="racaCor" value="Parda" id="r2"><label for="r2">Parda</label></span>
+          <span class="chip"><input type="radio" name="racaCor" value="Indígena" id="r3"><label for="r3">Indígena</label></span>
+          <span class="chip"><input type="radio" name="racaCor" value="Amarela" id="r4"><label for="r4">Amarela</label></span>
+          <span class="chip"><input type="radio" name="racaCor" value="Branca" id="r5"><label for="r5">Branca</label></span>
+          <span class="chip"><input type="radio" name="racaCor" value="Prefiro não declarar" id="r6"><label for="r6">Prefiro não declarar</label></span>
+        </div>
+        <div class="error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Se indígena: povo/etnia</label>
+        <input type="text" id="povoIndigena">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Aldeia, terra indígena ou território de referência</label>
+        <input type="text" id="aldeiaTerritorio">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Fala alguma língua indígena? Qual(is)?</label>
+        <input type="text" id="linguaIndigena">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Faz parte de comunidade quilombola ou tradicional? Qual?</label>
+        <input type="text" id="comunidadeTradicional">
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Identidade de gênero</label>
+        <div class="radio-grid" id="identidadeGenero">
+          <span class="chip"><input type="radio" name="identidadeGenero" value="Mulher cis" id="ig1"><label for="ig1">Mulher cis</label></span>
+          <span class="chip"><input type="radio" name="identidadeGenero" value="Mulher trans" id="ig2"><label for="ig2">Mulher trans</label></span>
+          <span class="chip"><input type="radio" name="identidadeGenero" value="Pessoa não binária" id="ig3"><label for="ig3">Pessoa não binária</label></span>
+          <span class="chip"><input type="radio" name="identidadeGenero" value="Prefiro não declarar" id="ig4"><label for="ig4">Prefiro não declarar</label></span>
+        </div>
+        <div class="error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Tem filhos?</label>
+        <div class="yesno" id="temFilhos">
+          <span class="chip"><input type="radio" name="temFilhos" value="Sim" id="tf1"><label for="tf1">Sim</label></span>
+          <span class="chip"><input type="radio" name="temFilhos" value="Não" id="tf2"><label for="tf2">Não</label></span>
+        </div>
+        <div class="field other-field" id="quantosFilhosField">
+          <label class="field-label">Quantos?</label>
+          <input type="number" id="quantosFilhos" min="0">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Quantas pessoas moram com você (contando você)?</label>
+        <input type="number" id="pessoasQueMoramComVoce" min="0">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Você é a principal geradora de renda da sua família?</label>
+        <div class="yesno">
+          <span class="chip"><input type="radio" name="principalGeradoraRenda" value="Sim" id="pg1"><label for="pg1">Sim</label></span>
+          <span class="chip"><input type="radio" name="principalGeradoraRenda" value="Não" id="pg2"><label for="pg2">Não</label></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 — TRAJETÓRIA -->
+    <div class="step" data-step="3">
+      <div class="step-eyebrow">03 — Ofício</div>
+      <div class="step-title">Trajetória profissional</div>
+      <p class="step-sub">Conhecimento prático e vivência territorial contam tanto quanto formação formal — queremos entender os dois caminhos.</p>
+
+      <div class="field">
+        <label class="field-label field-required">Você se identifica como</label>
+        <div class="check-grid" id="identificacaoProfissional">
+          <span class="chip"><input type="checkbox" name="identificacaoProfissional" value="Jornalista formada" id="i1"><label for="i1">Jornalista formada</label></span>
+          <span class="chip"><input type="checkbox" name="identificacaoProfissional" value="Jornalista sem diploma" id="i2"><label for="i2">Jornalista sem diploma</label></span>
+          <span class="chip"><input type="checkbox" name="identificacaoProfissional" value="Comunicadora comunitária" id="i3"><label for="i3">Comunicadora comunitária</label></span>
+          <span class="chip"><input type="checkbox" name="identificacaoProfissional" value="Criadora de conteúdo" id="i4"><label for="i4">Criadora de conteúdo</label></span>
+          <span class="chip"><input type="checkbox" name="identificacaoProfissional" value="Radialista" id="i5"><label for="i5">Radialista</label></span>
+          <span class="chip"><input type="checkbox" name="identificacaoProfissional" value="Fotógrafa / videomaker" id="i6"><label for="i6">Fotógrafa / videomaker</label></span>
+          <span class="chip"><input type="checkbox" name="identificacaoProfissional" value="Outra" id="i7"><label for="i7">Outra</label></span>
+        </div>
+        <div class="field other-field" id="identificacaoProfissionalOutraField">
+          <input type="text" id="identificacaoProfissionalOutraTexto" placeholder="Descreva">
+        </div>
+        <div class="error-msg">Selecione ao menos uma opção.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Tem diploma em jornalismo ou comunicação?</label>
+        <div class="yesno" id="temDiploma">
+          <span class="chip"><input type="radio" name="temDiploma" value="Sim" id="d1"><label for="d1">Sim</label></span>
+          <span class="chip"><input type="radio" name="temDiploma" value="Não" id="d2"><label for="d2">Não</label></span>
+          <span class="chip"><input type="radio" name="temDiploma" value="Em andamento" id="d3"><label for="d3">Em andamento</label></span>
+        </div>
+        <div class="error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Se não tem diploma, como aprendeu e pratica o ofício?</label>
+        <textarea id="comoAprendeu" placeholder="Vivência no território, oficinas, autodidata, com outras comunicadoras..."></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Há quantos anos atua com comunicação/jornalismo?</label>
+        <select id="anosAtuacao" required>
+          <option value="">Selecione</option>
+          <option>Menos de 1 ano</option>
+          <option>1 a 3 anos</option>
+          <option>4 a 7 anos</option>
+          <option>8 a 15 anos</option>
+          <option>Mais de 15 anos</option>
+        </select>
+        <div class="error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Atua principalmente como</label>
+        <div class="radio-grid">
+          <span class="chip"><input type="radio" name="formaAtuacao" value="Freelancer / autônoma" id="f1"><label for="f1">Freelancer / autônoma</label></span>
+          <span class="chip"><input type="radio" name="formaAtuacao" value="Contratada por veículo" id="f2"><label for="f2">Contratada por veículo</label></span>
+          <span class="chip"><input type="radio" name="formaAtuacao" value="Veículo/coletivo próprio" id="f3"><label for="f3">Veículo/coletivo próprio</label></span>
+          <span class="chip"><input type="radio" name="formaAtuacao" value="Voluntária" id="f4"><label for="f4">Voluntária</label></span>
+          <span class="chip"><input type="radio" name="formaAtuacao" value="Outra" id="f5"><label for="f5">Outra</label></span>
+        </div>
+        <div class="field other-field" id="formaAtuacaoOutraField">
+          <input type="text" id="formaAtuacaoOutraTexto" placeholder="Descreva">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Nome do veículo, coletivo ou plataforma onde atua (se houver)</label>
+        <input type="text" id="veiculoColetivo">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Principais temas que cobre</label>
+        <div class="check-grid" id="temasCobertura">
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Meio ambiente" id="t1"><label for="t1">Meio ambiente</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Direitos humanos" id="t2"><label for="t2">Direitos humanos</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Política" id="t3"><label for="t3">Política</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Cultura" id="t4"><label for="t4">Cultura</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Saúde" id="t5"><label for="t5">Saúde</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Educação" id="t6"><label for="t6">Educação</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Segurança pública" id="t7"><label for="t7">Segurança pública</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Economia / renda" id="t8"><label for="t8">Economia / renda</label></span>
+          <span class="chip"><input type="checkbox" name="temasCobertura" value="Outro" id="t9"><label for="t9">Outro</label></span>
+        </div>
+        <div class="field other-field" id="temasCoberturaOutroField">
+          <input type="text" id="temasCoberturaOutroTexto" placeholder="Descreva">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Formatos que produz</label>
+        <div class="check-grid" id="formatosProducao">
+          <span class="chip"><input type="checkbox" name="formatosProducao" value="Texto/reportagem" id="fo1"><label for="fo1">Texto/reportagem</label></span>
+          <span class="chip"><input type="checkbox" name="formatosProducao" value="Foto" id="fo2"><label for="fo2">Foto</label></span>
+          <span class="chip"><input type="checkbox" name="formatosProducao" value="Vídeo" id="fo3"><label for="fo3">Vídeo</label></span>
+          <span class="chip"><input type="checkbox" name="formatosProducao" value="Podcast/áudio" id="fo4"><label for="fo4">Podcast/áudio</label></span>
+          <span class="chip"><input type="checkbox" name="formatosProducao" value="Rádio" id="fo5"><label for="fo5">Rádio</label></span>
+          <span class="chip"><input type="checkbox" name="formatosProducao" value="Redes sociais" id="fo6"><label for="fo6">Redes sociais</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Links de portfólio, matérias ou redes sociais</label>
+        <textarea id="portfolioLinks" required placeholder="Um link por linha"></textarea>
+        <div class="error-msg">Informe ao menos um link.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Já recebeu prêmios, bolsas ou reconhecimentos?</label>
+        <textarea id="reconhecimentos"></textarea>
+      </div>
+    </div>
+
+    <!-- STEP 4 — BARREIRAS -->
+    <div class="step" data-step="4">
+      <div class="step-eyebrow">04 — Estrutura</div>
+      <div class="step-title">Barreiras e acesso</div>
+      <p class="step-sub">Entender os obstáculos concretos ajuda a direcionar formação, equipamento e recursos.</p>
+
+      <div class="field">
+        <label class="field-label">Já enfrentou dificuldade de acesso ou reconhecimento por não ter diploma?</label>
+        <div class="yesno">
+          <span class="chip"><input type="radio" name="barreiraDiploma" value="Sim" id="bd1"><label for="bd1">Sim</label></span>
+          <span class="chip"><input type="radio" name="barreiraDiploma" value="Não" id="bd2"><label for="bd2">Não</label></span>
+          <span class="chip"><input type="radio" name="barreiraDiploma" value="Não se aplica" id="bd3"><label for="bd3">Não se aplica</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label field-required">Principais barreiras que enfrenta hoje</label>
+        <textarea id="barreiras" required placeholder="Descreva livremente. Se não sentir que enfrenta barreiras, escreva 'não'."></textarea>
+        <div class="error-msg">Essa pergunta é obrigatória — responda ainda que seja "não".</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Tem acesso regular à internet de qualidade?</label>
+        <div class="radio-grid">
+          <span class="chip"><input type="radio" name="acessoInternet" value="Sim" id="ai1"><label for="ai1">Sim</label></span>
+          <span class="chip"><input type="radio" name="acessoInternet" value="Não" id="ai2"><label for="ai2">Não</label></span>
+          <span class="chip"><input type="radio" name="acessoInternet" value="Às vezes / instável" id="ai3"><label for="ai3">Às vezes / instável</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Equipamento próprio disponível</label>
+        <div class="check-grid" id="equipamentos">
+          <span class="chip"><input type="checkbox" name="equipamentos" value="Celular" id="e1"><label for="e1">Celular</label></span>
+          <span class="chip"><input type="checkbox" name="equipamentos" value="Câmera" id="e2"><label for="e2">Câmera</label></span>
+          <span class="chip"><input type="checkbox" name="equipamentos" value="Gravador de áudio" id="e3"><label for="e3">Gravador de áudio</label></span>
+          <span class="chip"><input type="checkbox" name="equipamentos" value="Computador" id="e4"><label for="e4">Computador</label></span>
+          <span class="chip"><input type="checkbox" name="equipamentos" value="Nenhum equipamento próprio" id="e5"><label for="e5">Nenhum equipamento próprio</label></span>
+          <span class="chip"><input type="checkbox" name="equipamentos" value="Outro" id="e6"><label for="e6">Outro</label></span>
+        </div>
+        <div class="field other-field" id="equipamentosOutroField">
+          <input type="text" id="equipamentosOutroTexto" placeholder="Descreva">
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 — SEGURANÇA -->
+    <div class="step" data-step="5">
+      <div class="step-eyebrow">05 — Proteção</div>
+      <div class="step-title">Segurança no exercício do ofício</div>
+      <p class="step-sub">Este bloco é o coração do manual de proteção. Responda com o cuidado que fizer sentido para você — os detalhes do caso são opcionais.</p>
+
+      <div class="field">
+        <label class="field-label field-required">Já sofreu algum tipo de violência ou assédio durante sua atuação como jornalista/comunicadora?</label>
+        <div class="yesno" id="sofreuViolencia">
+          <span class="chip"><input type="radio" name="sofreuViolencia" value="Sim" id="sv1"><label for="sv1">Sim</label></span>
+          <span class="chip"><input type="radio" name="sofreuViolencia" value="Não" id="sv2"><label for="sv2">Não</label></span>
+          <span class="chip"><input type="radio" name="sofreuViolencia" value="Prefiro não responder" id="sv3"><label for="sv3">Prefiro não responder</label></span>
+        </div>
+        <div class="error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="sub-block" id="blocoCaso">
+        <div class="field">
+          <label class="field-label">Conte sobre seu caso, se quiser compartilhar</label>
+          <textarea id="conteCaso"></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label">Aconteceu mais de uma vez?</label>
+          <div class="yesno">
+            <span class="chip"><input type="radio" name="acontenceuMaisDeUmaVez" value="Sim" id="am1"><label for="am1">Sim</label></span>
+            <span class="chip"><input type="radio" name="acontenceuMaisDeUmaVez" value="Não" id="am2"><label for="am2">Não</label></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Quando aconteceu (aproximadamente)?</label>
+          <input type="text" id="quandoAconteceu" placeholder="ex.: março de 2024">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Se sim, que tipo(s) de violência/assédio</label>
+        <div class="check-grid" id="tiposViolencia">
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Ameaça verbal" id="tv1"><label for="tv1">Ameaça verbal</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Ameaça virtual / redes sociais" id="tv2"><label for="tv2">Ameaça virtual / redes sociais</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Assédio" id="tv3"><label for="tv3">Assédio</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Violência física" id="tv4"><label for="tv4">Violência física</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Violência institucional / policial" id="tv5"><label for="tv5">Violência institucional / policial</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Racismo" id="tv6"><label for="tv6">Racismo</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Perseguição" id="tv7"><label for="tv7">Perseguição</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Censura / silenciamento por veículo ou fonte" id="tv8"><label for="tv8">Censura / silenciamento</label></span>
+          <span class="chip"><input type="checkbox" name="tiposViolencia" value="Outro" id="tv9"><label for="tv9">Outro</label></span>
+        </div>
+        <div class="field other-field" id="tiposViolenciaOutroField">
+          <input type="text" id="tiposViolenciaOutroTexto" placeholder="Descreva">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Essas situações ocorreram principalmente</label>
+        <div class="check-grid" id="ondeOcorreu">
+          <span class="chip"><input type="checkbox" name="ondeOcorreu" value="No território" id="oc1"><label for="oc1">No território</label></span>
+          <span class="chip"><input type="checkbox" name="ondeOcorreu" value="Na redação/veículo" id="oc2"><label for="oc2">Na redação/veículo</label></span>
+          <span class="chip"><input type="checkbox" name="ondeOcorreu" value="Online" id="oc3"><label for="oc3">Online</label></span>
+          <span class="chip"><input type="checkbox" name="ondeOcorreu" value="Em cobertura de rua" id="oc4"><label for="oc4">Em cobertura de rua</label></span>
+          <span class="chip"><input type="checkbox" name="ondeOcorreu" value="Outro" id="oc5"><label for="oc5">Outro</label></span>
+        </div>
+        <div class="field other-field" id="ondeOcorreuOutroField">
+          <input type="text" id="ondeOcorreuOutroTexto" placeholder="Descreva">
+        </div>
+        <div class="field-hint">Se quiser, descreva o local com mais detalhe:</div>
+        <textarea id="ondeAconteceuDetalhe" style="margin-top:0.5rem;"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Você denunciou?</label>
+        <div class="radio-grid" id="registrouBO">
+          <span class="chip"><input type="radio" name="registrouBO" value="Sim" id="rb1"><label for="rb1">Sim</label></span>
+          <span class="chip"><input type="radio" name="registrouBO" value="Não" id="rb2"><label for="rb2">Não</label></span>
+          <span class="chip"><input type="radio" name="registrouBO" value="Não se aplica" id="rb4"><label for="rb4">Não se aplica</label></span>
+        </div>
+      </div>
+
+      <div class="sub-block" id="blocoParaQuem">
+        <div class="field">
+          <label class="field-label">Para quem?</label>
+          <div class="check-grid" id="paraQuemDenunciou">
+            <span class="chip"><input type="checkbox" name="paraQuemDenunciou" value="Para uma liderança" id="pq1"><label for="pq1">Para uma liderança</label></span>
+            <span class="chip"><input type="checkbox" name="paraQuemDenunciou" value="Para o meu superior" id="pq2"><label for="pq2">Para o meu superior</label></span>
+            <span class="chip"><input type="checkbox" name="paraQuemDenunciou" value="Boletim de ocorrência" id="pq3"><label for="pq3">Boletim de ocorrência</label></span>
+            <span class="chip"><input type="checkbox" name="paraQuemDenunciou" value="Outro" id="pq4"><label for="pq4">Outro</label></span>
+          </div>
+          <div class="field other-field" id="paraQuemDenunciouOutroField">
+            <input type="text" id="paraQuemDenunciouOutroTexto" placeholder="Descreva">
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Você tem acesso a assessoria jurídica?</label>
+        <div class="yesno">
+          <span class="chip"><input type="radio" name="acessoAssessoriaJuridica" value="Sim" id="aj1"><label for="aj1">Sim</label></span>
+          <span class="chip"><input type="radio" name="acessoAssessoriaJuridica" value="Não" id="aj2"><label for="aj2">Não</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Você tem acesso ou faz acompanhamento psicológico?</label>
+        <div class="yesno">
+          <span class="chip"><input type="radio" name="acessoAcompanhamentoPsicologico" value="Sim" id="ap1"><label for="ap1">Sim</label></span>
+          <span class="chip"><input type="radio" name="acessoAcompanhamentoPsicologico" value="Não" id="ap2"><label for="ap2">Não</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Conhece alguma rede de apoio a jornalistas em risco (Abraji, Repórteres Sem Fronteiras, etc.)?</label>
+        <div class="yesno">
+          <span class="chip"><input type="radio" name="conheceRedeApoio" value="Sim" id="cr1"><label for="cr1">Sim</label></span>
+          <span class="chip"><input type="radio" name="conheceRedeApoio" value="Não" id="cr2"><label for="cr2">Não</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Já participou de alguma formação em segurança digital ou proteção física?</label>
+        <div class="yesno">
+          <span class="chip"><input type="radio" name="participouFormacaoSeguranca" value="Sim" id="pf1"><label for="pf1">Sim</label></span>
+          <span class="chip"><input type="radio" name="participouFormacaoSeguranca" value="Não" id="pf2"><label for="pf2">Não</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Sente que tem apoio da sua comunidade/território quando algo acontece?</label>
+        <div class="radio-grid">
+          <span class="chip"><input type="radio" name="apoioComunidade" value="Sim" id="apc1"><label for="apc1">Sim</label></span>
+          <span class="chip"><input type="radio" name="apoioComunidade" value="Não" id="apc2"><label for="apc2">Não</label></span>
+          <span class="chip"><input type="radio" name="apoioComunidade" value="Parcialmente" id="apc3"><label for="apc3">Parcialmente</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Você se sente segura para exercer sua profissão ou atuar na comunicação da sua comunidade?</label>
+        <div class="radio-grid">
+          <span class="chip"><input type="radio" name="sentiSeguranca" value="Sim" id="ss1"><label for="ss1">Sim</label></span>
+          <span class="chip"><input type="radio" name="sentiSeguranca" value="Não" id="ss2"><label for="ss2">Não</label></span>
+          <span class="chip"><input type="radio" name="sentiSeguranca" value="Parcialmente" id="ss3"><label for="ss3">Parcialmente</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">O que mais te faria sentir mais segura para exercer seu trabalho?</label>
+        <textarea id="oQueAjudariaSeguranca"></textarea>
+      </div>
+    </div>
+
+    <!-- STEP 6 — EXPECTATIVAS -->
+    <div class="step" data-step="6">
+      <div class="step-eyebrow">06 — Futuro</div>
+      <div class="step-title">Necessidades e expectativas</div>
+      <p class="step-sub">O que a Coalizão JNI pode oferecer que faça diferença real na sua atuação?</p>
+
+      <div class="field">
+        <label class="field-label field-required">O que você espera ao fazer parte desta rede?</label>
+        <div class="check-grid" id="expectativas">
+          <span class="chip"><input type="checkbox" name="expectativas" value="Formação/capacitação" id="ex1"><label for="ex1">Formação/capacitação</label></span>
+          <span class="chip"><input type="checkbox" name="expectativas" value="Proteção e segurança" id="ex2"><label for="ex2">Proteção e segurança</label></span>
+          <span class="chip"><input type="checkbox" name="expectativas" value="Oportunidades de trabalho remunerado" id="ex3"><label for="ex3">Oportunidades de trabalho remunerado</label></span>
+          <span class="chip"><input type="checkbox" name="expectativas" value="Visibilidade/divulgação do trabalho" id="ex4"><label for="ex4">Visibilidade/divulgação do trabalho</label></span>
+          <span class="chip"><input type="checkbox" name="expectativas" value="Conexão com outras comunicadoras" id="ex5"><label for="ex5">Conexão com outras comunicadoras</label></span>
+          <span class="chip"><input type="checkbox" name="expectativas" value="Apoio jurídico" id="ex6"><label for="ex6">Apoio jurídico</label></span>
+          <span class="chip"><input type="checkbox" name="expectativas" value="Apoio financeiro/bolsas" id="ex7"><label for="ex7">Apoio financeiro/bolsas</label></span>
+          <span class="chip"><input type="checkbox" name="expectativas" value="Outro" id="ex8"><label for="ex8">Outro</label></span>
+        </div>
+        <div class="field other-field" id="expectativasOutroField">
+          <input type="text" id="expectativasOutroTexto" placeholder="Descreva">
+        </div>
+        <div class="error-msg">Selecione ao menos uma opção.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Teria interesse em participar de oficinas e formações da coalizão?</label>
+        <div class="yesno">
+          <span class="chip"><input type="radio" name="interesseOficinas" value="Sim" id="io1"><label for="io1">Sim</label></span>
+          <span class="chip"><input type="radio" name="interesseOficinas" value="Não" id="io2"><label for="io2">Não</label></span>
+          <span class="chip"><input type="radio" name="interesseOficinas" value="Talvez" id="io3"><label for="io3">Talvez</label></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Como você acredita que seria a melhor maneira de combater o assédio e as violências contra comunicadores e jornalistas negras e indígenas?</label>
+        <textarea id="melhorManeiraCombater"></textarea>
+      </div>
+    </div>
+
+    <!-- STEP 7 — CONSENTIMENTO -->
+    <div class="step" data-step="7">
+      <div class="step-eyebrow">07 — Autorização</div>
+      <div class="step-title">Consentimento e privacidade</div>
+
+      <div class="lgpd-note">
+        <h4>Como usamos seus dados</h4>
+        <p>Suas respostas são usadas exclusivamente para este mapeamento nacional e para construir o manual de proteção da Coalizão JNI. A equipe da coalizão trata os dados de forma confidencial, e qualquer resultado divulgado publicamente aparece apenas de forma agregada, sem identificar quem respondeu.</p>
+        <p>Isso está em conformidade com a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018): você pode pedir a qualquer momento para acessar, corrigir ou excluir suas respostas, escrevendo para a coalizão pelo canal de contato do site.</p>
+      </div>
+
+      <div class="consent-box">
+        <input type="checkbox" id="consentimentoMapeamento" required>
+        <p><strong>Obrigatório.</strong> Autorizo o uso das minhas respostas para o mapeamento nacional e a construção do manual de proteção da Coalizão JNI, nos termos descritos acima.</p>
+      </div>
+      <div class="error-msg" id="erroConsentMapeamento" style="margin-bottom:1rem;">É necessário este consentimento para enviar o formulário.</div>
+
+      <div class="field">
+        <label class="field-label">Como prefere ser contatada futuramente?</label>
+        <div class="radio-grid" id="preferenciaContato">
+          <span class="chip"><input type="radio" name="preferenciaContato" value="E-mail" id="pc1"><label for="pc1">E-mail</label></span>
+          <span class="chip"><input type="radio" name="preferenciaContato" value="WhatsApp" id="pc2"><label for="pc2">WhatsApp</label></span>
+          <span class="chip"><input type="radio" name="preferenciaContato" value="Nenhum contato futuro" id="pc3"><label for="pc3">Nenhum contato futuro</label></span>
+        </div>
+      </div>
+
+      <div class="field other-field" id="preferenciaContatoEmailField">
+        <label class="field-label field-required">Confirme seu e-mail de contato</label>
+        <input type="email" id="preferenciaContatoEmail">
+        <div class="error-msg">Informe um e-mail válido.</div>
+      </div>
+
+      <div class="field other-field" id="preferenciaContatoWhatsappField">
+        <label class="field-label field-required">Confirme seu número de WhatsApp</label>
+        <input type="tel" id="preferenciaContatoWhatsapp" placeholder="(DDD) 9XXXX-XXXX">
+        <div class="error-msg">Informe um número.</div>
+      </div>
+    </div>
+
+    <!-- STEP 8 — REVISÃO -->
+    <div class="step" data-step="8">
+      <div class="step-eyebrow">08 — Revisão</div>
+      <div class="step-title">Confira antes de enviar</div>
+      <p class="step-sub">Dê uma olhada rápida. Se algo estiver errado, volte e corrija.</p>
+      <div id="reviewContent"></div>
+      <div class="status-msg" id="statusMsg"></div>
+    </div>
+
+    <!-- STEP 9 — DONE -->
+    <div class="step" data-step="9">
+      <div class="done-screen">
+        <div class="done-icon">🌿</div>
+        <h2>Obrigada por contribuir</h2>
+        <p>Sua resposta foi registrada. Ela vai ajudar a construir um mapeamento mais justo — e um manual de proteção que parte de quem realmente vive essas histórias.</p>
+        <button type="button" class="btn btn-ghost" id="downloadJson">Baixar minhas respostas (JSON)</button>
+      </div>
+    </div>
+
+    <div class="step-nav" id="stepNav">
+      <button type="button" class="btn btn-ghost" id="btnBack">Voltar</button>
+      <div>
+        <button type="button" class="btn btn-primary" id="btnNext">Continuar</button>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<script>
+(function () {
+  const steps = Array.from(document.querySelectorAll('.step'));
+  const reviewStepIndex = 8;
+  const doneStepIndex = 9;
+  let current = 1;
+
+  const stepNames = {
+    1: 'Identificação', 2: 'Identidade', 3: 'Trajetória', 4: 'Barreiras',
+    5: 'Segurança', 6: 'Expectativas', 7: 'Consentimento', 8: 'Revisão', 9: 'Concluído'
+  };
+
+  const stepLabel = document.getElementById('stepLabel');
+  const stepNameEl = document.getElementById('stepName');
+  const progressFill = document.getElementById('progressFill');
+  const btnBack = document.getElementById('btnBack');
+  const btnNext = document.getElementById('btnNext');
+  const stepNav = document.getElementById('stepNav');
+
+  function showStep(n) {
+    steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === n));
+    stepLabel.textContent = n <= 7 ? `Etapa ${n} de 7` : (n === 8 ? 'Revisão' : '');
+    stepNameEl.textContent = stepNames[n] || '';
+    progressFill.style.width = n <= 7 ? `${(n/7)*100}%` : '100%';
+    btnBack.style.display = (n === 1 || n === 9) ? 'none' : 'inline-block';
+    if (n === reviewStepIndex) { btnNext.textContent = 'Enviar respostas'; renderReview(); }
+    else { btnNext.textContent = 'Continuar'; }
+    stepNav.style.display = n === 9 ? 'none' : 'flex';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function fieldValue(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function checkedValues(name) { return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value); }
+  function radioValue(name) { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : ''; }
+  function isChecked(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+  function setInvalid(fieldEl, invalid) { if (fieldEl) fieldEl.classList.toggle('invalid', invalid); }
+
+  // ── Toggle helpers for "Outro/Outra" free-text fields ──
+  function wireCheckboxOther(checkboxId, fieldWrapperId) {
+    const cb = document.getElementById(checkboxId);
+    const wrap = document.getElementById(fieldWrapperId);
+    if (!cb || !wrap) return;
+    cb.addEventListener('change', () => wrap.classList.toggle('show', cb.checked));
+  }
+  function wireRadioGroupOther(groupName, triggerValue, fieldWrapperId) {
+    const radios = document.querySelectorAll(`input[name="${groupName}"]`);
+    const wrap = document.getElementById(fieldWrapperId);
+    if (!radios.length || !wrap) return;
+    radios.forEach(r => r.addEventListener('change', () => {
+      wrap.classList.toggle('show', radioValue(groupName) === triggerValue);
+    }));
+  }
+  function wireSubBlock(groupName, triggerValues, blockId) {
+    const radios = document.querySelectorAll(`input[name="${groupName}"]`);
+    const block = document.getElementById(blockId);
+    if (!radios.length || !block) return;
+    radios.forEach(r => r.addEventListener('change', () => {
+      block.classList.toggle('show', triggerValues.includes(radioValue(groupName)));
+    }));
+  }
+
+  wireCheckboxOther('i7', 'identificacaoProfissionalOutraField');
+  wireRadioGroupOther('formaAtuacao', 'Outra', 'formaAtuacaoOutraField');
+  wireCheckboxOther('t9', 'temasCoberturaOutroField');
+  wireCheckboxOther('e6', 'equipamentosOutroField');
+  wireCheckboxOther('tv9', 'tiposViolenciaOutroField');
+  wireCheckboxOther('oc5', 'ondeOcorreuOutroField');
+  wireCheckboxOther('ex8', 'expectativasOutroField');
+  wireCheckboxOther('pq4', 'paraQuemDenunciouOutroField');
+
+  wireSubBlock('sofreuViolencia', ['Sim'], 'blocoCaso');
+  wireSubBlock('registrouBO', ['Sim'], 'blocoParaQuem');
+
+  wireRadioGroupOther('temFilhos', 'Sim', 'quantosFilhosField');
+
+  wireRadioGroupOther('preferenciaContato', 'E-mail', 'preferenciaContatoEmailField');
+  wireRadioGroupOther('preferenciaContato', 'WhatsApp', 'preferenciaContatoWhatsappField');
+
+  function validateOtherText(triggerCheckboxId, textId, containerFieldId) {
+    const cb = document.getElementById(triggerCheckboxId);
+    const txt = document.getElementById(textId);
+    if (cb && cb.checked && txt.value.trim() === '') {
+      setInvalid(document.getElementById(containerFieldId), true);
+      return false;
+    }
+    return true;
+  }
+
+  function validateStep(n) {
+    let ok = true;
+    if (n === 1) {
+      const checks = [
+        ['nome', fieldValue('nome') !== ''],
+        ['faixaEtaria', fieldValue('faixaEtaria') !== ''],
+        ['email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fieldValue('email'))],
+        ['estado', fieldValue('estado') !== ''],
+        ['cidade', fieldValue('cidade') !== ''],
+      ];
+      checks.forEach(([id, valid]) => { setInvalid(document.getElementById(id).closest('.field'), !valid); if (!valid) ok = false; });
+      const biomasOk = checkedValues('biomas').length > 0;
+      setInvalid(document.getElementById('biomas').closest('.field'), !biomasOk);
+      if (!biomasOk) ok = false;
+    }
+    if (n === 2) {
+      const racaOk = radioValue('racaCor') !== '';
+      setInvalid(document.getElementById('racaCor').closest('.field'), !racaOk);
+      if (!racaOk) ok = false;
+      const generoOk = radioValue('identidadeGenero') !== '';
+      setInvalid(document.getElementById('identidadeGenero').closest('.field'), !generoOk);
+      if (!generoOk) ok = false;
+    }
+    if (n === 3) {
+      const idOk = checkedValues('identificacaoProfissional').length > 0;
+      setInvalid(document.getElementById('identificacaoProfissional').closest('.field'), !idOk);
+      if (!idOk) ok = false;
+      if (!validateOtherText('i7', 'identificacaoProfissionalOutraTexto', 'identificacaoProfissionalOutraField')) ok = false;
+      const dipOk = radioValue('temDiploma') !== '';
+      setInvalid(document.getElementById('temDiploma').closest('.field'), !dipOk);
+      if (!dipOk) ok = false;
+      const anosOk = fieldValue('anosAtuacao') !== '';
+      setInvalid(document.getElementById('anosAtuacao').closest('.field'), !anosOk);
+      if (!anosOk) ok = false;
+      if (!validateOtherText('f5', 'formaAtuacaoOutraTexto', 'formaAtuacaoOutraField')) ok = false;
+      if (!validateOtherText('t9', 'temasCoberturaOutroTexto', 'temasCoberturaOutroField')) ok = false;
+      const portfolioOk = fieldValue('portfolioLinks') !== '';
+      setInvalid(document.getElementById('portfolioLinks').closest('.field'), !portfolioOk);
+      if (!portfolioOk) ok = false;
+    }
+    if (n === 4) {
+      const barOk = fieldValue('barreiras') !== '';
+      setInvalid(document.getElementById('barreiras').closest('.field'), !barOk);
+      if (!barOk) ok = false;
+      if (!validateOtherText('e6', 'equipamentosOutroTexto', 'equipamentosOutroField')) ok = false;
+    }
+    if (n === 5) {
+      const svOk = radioValue('sofreuViolencia') !== '';
+      setInvalid(document.getElementById('sofreuViolencia').closest('.field'), !svOk);
+      if (!svOk) ok = false;
+      if (!validateOtherText('tv9', 'tiposViolenciaOutroTexto', 'tiposViolenciaOutroField')) ok = false;
+      if (!validateOtherText('oc5', 'ondeOcorreuOutroTexto', 'ondeOcorreuOutroField')) ok = false;
+      if (!validateOtherText('pq4', 'paraQuemDenunciouOutroTexto', 'paraQuemDenunciouOutroField')) ok = false;
+    }
+    if (n === 6) {
+      const exOk = checkedValues('expectativas').length > 0;
+      setInvalid(document.getElementById('expectativas').closest('.field'), !exOk);
+      if (!exOk) ok = false;
+      if (!validateOtherText('ex8', 'expectativasOutroTexto', 'expectativasOutroField')) ok = false;
+    }
+    if (n === 7) {
+      const consentOk = document.getElementById('consentimentoMapeamento').checked;
+      document.getElementById('erroConsentMapeamento').style.display = consentOk ? 'none' : 'block';
+      if (!consentOk) ok = false;
+      const pref = radioValue('preferenciaContato');
+      if (pref === 'E-mail') {
+        const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fieldValue('preferenciaContatoEmail'));
+        setInvalid(document.getElementById('preferenciaContatoEmailField'), !valid);
+        if (!valid) ok = false;
+      }
+      if (pref === 'WhatsApp') {
+        const valid = fieldValue('preferenciaContatoWhatsapp') !== '';
+        setInvalid(document.getElementById('preferenciaContatoWhatsappField'), !valid);
+        if (!valid) ok = false;
+      }
+    }
+    return ok;
+  }
+
+  function collectData() {
+    return {
+      nome: fieldValue('nome'), nomeSocial: fieldValue('nomeSocial'), pronomes: fieldValue('pronomes'),
+      faixaEtaria: fieldValue('faixaEtaria'), email: fieldValue('email'), whatsapp: fieldValue('whatsapp'),
+      estado: fieldValue('estado'), cidade: fieldValue('cidade'), territorio: fieldValue('territorio'),
+      biomas: checkedValues('biomas'),
+
+      racaCor: radioValue('racaCor'), povoIndigena: fieldValue('povoIndigena'),
+      aldeiaTerritorio: fieldValue('aldeiaTerritorio'), linguaIndigena: fieldValue('linguaIndigena'),
+      comunidadeTradicional: fieldValue('comunidadeTradicional'), identidadeGenero: radioValue('identidadeGenero'),
+      temFilhos: radioValue('temFilhos'), quantosFilhos: fieldValue('quantosFilhos'),
+      pessoasQueMoramComVoce: fieldValue('pessoasQueMoramComVoce'), principalGeradoraRenda: radioValue('principalGeradoraRenda'),
+
+      identificacaoProfissional: checkedValues('identificacaoProfissional'),
+      identificacaoProfissionalOutraTexto: fieldValue('identificacaoProfissionalOutraTexto'),
+      temDiploma: radioValue('temDiploma'), comoAprendeu: fieldValue('comoAprendeu'),
+      anosAtuacao: fieldValue('anosAtuacao'), formaAtuacao: radioValue('formaAtuacao'),
+      formaAtuacaoOutraTexto: fieldValue('formaAtuacaoOutraTexto'), veiculoColetivo: fieldValue('veiculoColetivo'),
+      temasCobertura: checkedValues('temasCobertura'), temasCoberturaOutroTexto: fieldValue('temasCoberturaOutroTexto'),
+      formatosProducao: checkedValues('formatosProducao'), portfolioLinks: fieldValue('portfolioLinks'),
+      reconhecimentos: fieldValue('reconhecimentos'),
+
+      barreiraDiploma: radioValue('barreiraDiploma'), barreiras: fieldValue('barreiras'),
+      acessoInternet: radioValue('acessoInternet'), equipamentos: checkedValues('equipamentos'),
+      equipamentosOutroTexto: fieldValue('equipamentosOutroTexto'),
+
+      sofreuViolencia: radioValue('sofreuViolencia'), conteCaso: fieldValue('conteCaso'),
+      acontenceuMaisDeUmaVez: radioValue('acontenceuMaisDeUmaVez'), quandoAconteceu: fieldValue('quandoAconteceu'),
+      tiposViolencia: checkedValues('tiposViolencia'), tiposViolenciaOutroTexto: fieldValue('tiposViolenciaOutroTexto'),
+      ondeOcorreu: checkedValues('ondeOcorreu'), ondeOcorreuOutroTexto: fieldValue('ondeOcorreuOutroTexto'),
+      ondeAconteceuDetalhe: fieldValue('ondeAconteceuDetalhe'),
+      registrouBO: radioValue('registrouBO'), paraQuemDenunciou: checkedValues('paraQuemDenunciou'),
+      paraQuemDenunciouOutroTexto: fieldValue('paraQuemDenunciouOutroTexto'),
+      acessoAssessoriaJuridica: radioValue('acessoAssessoriaJuridica'),
+      acessoAcompanhamentoPsicologico: radioValue('acessoAcompanhamentoPsicologico'),
+      conheceRedeApoio: radioValue('conheceRedeApoio'), participouFormacaoSeguranca: radioValue('participouFormacaoSeguranca'),
+      apoioComunidade: radioValue('apoioComunidade'), sentiSeguranca: radioValue('sentiSeguranca'),
+      oQueAjudariaSeguranca: fieldValue('oQueAjudariaSeguranca'),
+
+      expectativas: checkedValues('expectativas'), expectativasOutroTexto: fieldValue('expectativasOutroTexto'),
+      interesseOficinas: radioValue('interesseOficinas'), melhorManeiraCombater: fieldValue('melhorManeiraCombater'),
+
+      consentimentoMapeamento: isChecked('consentimentoMapeamento'),
+      preferenciaContato: radioValue('preferenciaContato'),
+      preferenciaContatoEmail: fieldValue('preferenciaContatoEmail'),
+      preferenciaContatoWhatsapp: fieldValue('preferenciaContatoWhatsapp'),
+
+      enviadoEm: new Date().toISOString()
+    };
+  }
+
+  function renderReview() {
+    const d = collectData();
+    const el = document.getElementById('reviewContent');
+    function row(label, val) {
+      if (!val || (Array.isArray(val) && val.length === 0)) return '';
+      const display = Array.isArray(val) ? val.join(', ') : val;
+      return `<dt>${label}</dt><dd>${display}</dd>`;
+    }
+    el.innerHTML = `
+      <div class="summary-block"><h4>Identificação</h4><dl>
+        ${row('Nome', d.nome)} ${row('E-mail', d.email)} ${row('WhatsApp', d.whatsapp)}
+        ${row('Cidade/estado', (d.cidade && d.estado) ? d.cidade + '/' + d.estado : '')}
+        ${row('Território', d.territorio)} ${row('Biomas', d.biomas)}
+      </dl></div>
+      <div class="summary-block"><h4>Identidade</h4><dl>
+        ${row('Raça/cor', d.racaCor)} ${row('Identidade de gênero', d.identidadeGenero)}
+        ${row('Povo indígena', d.povoIndigena)} ${row('Comunidade tradicional', d.comunidadeTradicional)}
+      </dl></div>
+      <div class="summary-block"><h4>Trajetória</h4><dl>
+        ${row('Identificação profissional', d.identificacaoProfissional)}
+        ${row('Diploma', d.temDiploma)} ${row('Tempo de atuação', d.anosAtuacao)} ${row('Temas', d.temasCobertura)}
+      </dl></div>
+      <div class="summary-block"><h4>Segurança</h4><dl>
+        ${row('Já sofreu violência/assédio', d.sofreuViolencia)} ${row('Tipos', d.tiposViolencia)}
+      </dl></div>
+      <div class="summary-block"><h4>Consentimento</h4><dl>
+        ${row('Uso para mapeamento', d.consentimentoMapeamento ? 'Sim' : 'Não')}
+        ${row('Contato futuro', d.preferenciaContato)}
+      </dl></div>
+    `;
+  }
+
+  // ── SUBMISSÃO (Supabase) ──
+  const SUPABASE_URL = 'https://nfehafyhmsvtovmgmygw.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_NpXpr3QL3PTtenr0gJyQdQ_9uEKC_jm';
+
+  let supabaseClient = null;
+  if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  let lastData = null;
+
+  async function submitData() {
+    const statusMsg = document.getElementById('statusMsg');
+    lastData = collectData();
+
+    if (!supabaseClient) {
+      statusMsg.textContent = 'Banco de dados ainda não configurado — suas respostas foram preparadas para download na próxima tela.';
+      statusMsg.className = 'status-msg info show';
+      current = doneStepIndex;
+      showStep(current);
+      return;
+    }
+
+    statusMsg.textContent = 'Enviando...';
+    statusMsg.className = 'status-msg info show';
+    try {
+      const { error } = await supabaseClient.from('respostas_mapeamento').insert([{ dados: lastData }]);
+      if (error) throw error;
+      current = doneStepIndex;
+      showStep(current);
+    } catch (err) {
+      statusMsg.textContent = 'Não foi possível enviar automaticamente agora. Baixe suas respostas em JSON e envie por e-mail, ou tente novamente mais tarde.';
+      statusMsg.className = 'status-msg error show';
+    }
+  }
+
+  document.getElementById('downloadJson').addEventListener('click', function () {
+    const data = lastData || collectData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mapeamento-jni-${(data.nome || 'resposta').replace(/\s+/g,'-').toLowerCase()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  btnNext.addEventListener('click', function () {
+    if (current <= 7) {
+      if (!validateStep(current)) return;
+      current += 1;
+      showStep(current);
+    } else if (current === reviewStepIndex) {
+      submitData();
+    }
+  });
+
+  btnBack.addEventListener('click', function () {
+    if (current > 1 && current <= reviewStepIndex) { current -= 1; showStep(current); }
+  });
+
+  showStep(current);
+})();
+</script>
+
+</body>
+</html>
