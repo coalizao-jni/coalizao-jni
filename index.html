@@ -498,7 +498,105 @@
       .hero-headline { font-size: 3rem; }
       .hero-identity { font-size: 1.1rem; }
     }
-  
+
+    /* ── DESTAQUE: MAPEAMENTO ── */
+    .destaque {
+      background: linear-gradient(135deg, var(--terra) 0%, var(--ocre) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .destaque-circle {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(250,246,239,0.18);
+    }
+    .destaque-circle:nth-child(1) { width: 420px; height: 420px; right: -120px; bottom: -160px; }
+    .destaque-circle:nth-child(2) { width: 240px; height: 240px; left: -80px; top: -80px; border-color: rgba(250,246,239,0.1); }
+
+    .destaque-inner {
+      position: relative; z-index: 2;
+      max-width: 720px;
+    }
+    .destaque .section-tag { color: var(--areia); }
+    .destaque .section-tag::before { background: var(--areia); }
+    .destaque-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 900; line-height: 1.12;
+      color: var(--branco);
+      margin-bottom: 1.4rem;
+    }
+    .destaque-title em { font-style: italic; color: var(--floresta); }
+    .destaque-text p {
+      font-size: 1rem; line-height: 1.8;
+      color: rgba(250,246,239,0.9);
+      max-width: 560px;
+      margin-bottom: 1.6rem;
+    }
+    .destaque-meta {
+      display: flex; flex-wrap: wrap; gap: 0.7rem;
+      margin-bottom: 2.2rem;
+    }
+    .destaque-meta span {
+      font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--branco);
+      background: rgba(13,13,13,0.2);
+      border: 1px solid rgba(250,246,239,0.35);
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+    }
+    .btn-destaque {
+      background: var(--branco);
+      color: var(--terra);
+      padding: 1.1rem 2.4rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      text-decoration: none;
+      border: none; cursor: pointer;
+      display: inline-block;
+      transition: background 0.3s, transform 0.2s, color 0.3s;
+    }
+    .btn-destaque:hover { background: var(--floresta); color: var(--branco); transform: translateY(-2px); }
+
+    .destaque-card {
+      background: rgba(250,246,239,0.1);
+      border: 1px solid rgba(250,246,239,0.25);
+      backdrop-filter: blur(6px);
+      padding: 2.5rem 2rem;
+      border-radius: 4px;
+    }
+    .destaque-card-icon { font-size: 2.2rem; display: block; margin-bottom: 1rem; }
+    .destaque-card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem; color: var(--branco);
+      margin-bottom: 0.8rem; line-height: 1.3;
+    }
+    .destaque-card p {
+      font-size: 0.85rem; color: rgba(250,246,239,0.75);
+      line-height: 1.7;
+    }
+    .nav-cta {
+      background: var(--ocre);
+      color: var(--branco) !important;
+      padding: 0.55rem 1.2rem !important;
+      border-radius: 2px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .nav-cta:hover { background: var(--terra) !important; transform: translateY(-1px); }
+
+    @media (max-width: 900px) {
+      .destaque-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    }
+
+    .destaque-tag-big {
+      font-size: 1.15rem !important;
+      font-weight: 700;
+      letter-spacing: 0.1em !important;
+    }
+    .destaque-tag-big::before { width: 2rem !important; }
+    .destaque-title em { color: #F2B705; }
+
 </style>
 </head>
 <body>
@@ -512,6 +610,7 @@
       <a href="#atuacao">Atuação</a>
       <a href="#quem">Quem Somos</a>
       <a href="#contato">Contato</a>
+      <a href="https://coalizao-jni.github.io/coalizao-jni/mapeamento.html" class="nav-cta">Mapeamento</a>
     </div>
   </nav>
 
@@ -548,6 +647,27 @@
       <span class="band-label">Coalizão plural e independente</span>
     </div>
   </div>
+
+  <!-- DESTAQUE: MAPEAMENTO -->
+  <section id="mapeamento" class="destaque">
+    <div class="destaque-circle"></div>
+    <div class="destaque-circle"></div>
+    <div class="destaque-inner">
+      <div class="fade-up">
+        <div class="section-tag destaque-tag-big">Participe</div>
+        <h2 class="destaque-title">Sua trajetória <em>importa</em><br>para este mapeamento</h2>
+        <div class="destaque-text">
+          <p>
+            Estamos construindo um mapeamento nacional de jornalistas e comunicadoras negras
+            e indígenas que vai alimentar um manual de proteção para quem exerce esse ofício
+            a partir do território — com ou sem diploma, dentro ou fora dos veículos tradicionais.
+          </p>
+        </div>
+        <a href="https://coalizao-jni.github.io/coalizao-jni/mapeamento.html" class="btn-destaque">Responder o formulário</a>
+      </div>
+
+    </div>
+  </section>
 
   <!-- SOBRE -->
   <section id="sobre" style="position:relative; overflow:hidden;">
